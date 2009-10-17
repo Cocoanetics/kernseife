@@ -51,7 +51,7 @@ static int indentLevel = 0;
 	{
 		ns = @"";
 	}
-
+	
 	
 	
 	NSMutableString *indent = [NSMutableString string];
@@ -67,7 +67,7 @@ static int indentLevel = 0;
 	{
 		[attributeString appendFormat:@" %@=\"%@\"", oneAttribute, [[attributes objectForKey:oneAttribute] stringByReplacingOccurrencesOfString:@"&" withString:@"&amp;"]];
 	}
-		
+	
 	if ([children count])
 	{
 		NSMutableString *childrenString = [NSMutableString string];
@@ -83,9 +83,17 @@ static int indentLevel = 0;
 	}
 	else 
 	{
-		return [NSString stringWithFormat:@"%@<%@%@%@>\n%@%@</%@>\n", indent, name, attributeString, ns, text, indent, name];
+		if (!text||![text length])
+		{
+			return [NSString stringWithFormat:@"%@<%@%@%@ />\n", indent, name, attributeString, ns];
+		}
+		else
+		{
+			return [NSString stringWithFormat:@"%@<%@%@%@>\n%@%@</%@>\n", indent, name, attributeString, ns, [text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]], indent, name];
+		}
+		
 	}
-
+	
 }
 
 - (XMLelement *) getNamedChild:(NSString *)childName
@@ -121,7 +129,7 @@ static int indentLevel = 0;
 	{
 		return nil;
 	}
-
+	
 }
 
 - (NSArray *) getNamedChildren:(NSString *)childName WithAttribute:(NSString *)attributeName HasValue:(NSString *)attributeValue
@@ -199,7 +207,7 @@ static int indentLevel = 0;
 	{
 		self.attributes = [NSMutableDictionary dictionary];
 	}
-
+	
 	return attributes;
 }
 
@@ -219,7 +227,7 @@ static int indentLevel = 0;
 {
 	XMLelement *linkElement = [self getNamedChild:@"link"];
 	NSString *linkString = [linkElement.attributes objectForKey:@"href"];
-
+	
 	// workaround
 	//linkString = [linkString stringByReplacingOccurrencesOfString:@"http://192.168.1.78:8080/ELO-AFS/app" withString:@"http://divos.dyndns.org:8080/afs-elo/afs"];
 	
