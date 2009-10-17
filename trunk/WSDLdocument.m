@@ -277,7 +277,7 @@
 		return [NSString stringWithFormat:@"[%@ dateFromISO8601]", variable];
 	}
 	
-	return @"Unknown";
+	return nil;
 }
 
 - (NSString *)conversionFromTypeToNSString:(NSString *)otherType variable:(NSString *)variable
@@ -303,7 +303,7 @@
 		return [NSString stringWithFormat:@"[%@ ISO8601string]", variable];
 	}
 	
-	return @"Unknown";
+	return nil;
 }
 
 /*
@@ -397,13 +397,6 @@
 	return [NSString stringWithString:retStr];
 }
 
-- (NSString *) operationAsGET:(XMLelement *)operation
-{
-	
-	
-	return nil;
-}
-
 
 - (void)writeClassFilesForPort:(NSString *)portName
 {
@@ -450,7 +443,7 @@
 	[classHeader appendFormat:@"// %@.h \n\n", [self serviceName]];
 	[classHeader appendString:@"#import <Foundation/Foundation.h>\n"];
 	[classHeader appendString:@"#import \"WebService.h\"\n\n"];
-	[classHeader appendString:@"#import \"NSString+Helpers.h\"\n\n"];
+	[classHeader appendString:@"#import \"NSString+Helpers.h\"\n"];
 	[classHeader appendString:@"#import \"NSDate+xml.h\"\n\n"];
 	[classHeader appendFormat:@"@interface %@ : WebService\n{\n}\n\n", [self serviceName]];
 	
@@ -536,20 +529,6 @@
 				[classBody appendFormat:@"\tNSURLRequest *request = [self makeSOAPRequestWithLocation:location Parameters:paramArray Operation:@\"%@\" Namespace:@\"%@\" Action:@\"%@\" SOAPVersion:SOAPVersion1_2];\n", operationName, targetNamespace, soapAction];
 			}
 			
-			[classBody appendString:@"\tNSURLResponse *response;\n"];
-			[classBody appendString:@"\tNSError *error;\n"];
-			[classBody appendString:@"\tNSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];\n"];
-			[classBody appendString:@"\tXMLdocument *xml = [XMLdocument documentWithData:data];\n"];
-			[classBody appendString:@"\tNSString *result = [self returnValueFromSOAPResponse:xml];\n"];
-			
-			if (outputParameters)
-			{
-				NSDictionary *outParam = [outputParameters objectAtIndex:0];
-				NSString *outParamType = [self cocoaTypeForSoapType:[outParam objectForKey:@"type"]];
-				
-				NSString *convertedVariable = [self conversionFromNSStringToType:outParamType variable:@"result"];
-				[classBody appendFormat:@"\treturn %@;\n", convertedVariable];
-			}
 		}
 		else if ([suboperation.namespace isEqualToString:@"http://schemas.xmlsoap.org/wsdl/http/"])
 		{
@@ -558,8 +537,7 @@
 
 			if (!verb)
 			{
-				printf("HTTP Transport specified, but no VERB");
-				exit (1);
+				[classBody appendString:@"#error HTTP Transport specified, but no VERB\n"];
 			}
 			
 			NSString *path = [suboperation.attributes objectForKey:@"location"];
@@ -579,29 +557,36 @@
 			}
 			
 			[classBody appendFormat:@"\tNSURLRequest *request = [self make%@RequestWithLocation:location Parameters:paramDict];\n", verb];
-			[classBody appendString:@"\tNSURLResponse *response;\n"];
-			[classBody appendString:@"\tNSError *error;\n"];
-			[classBody appendString:@"\tNSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];\n"];
-			[classBody appendString:@"\tXMLdocument *xml = [XMLdocument documentWithData:data];\n"];
-			[classBody appendString:@"\tNSString *result = xml.documentRoot.text;\n"];
-			
-			if (outputParameters)
-			{
-				NSDictionary *outParam = [outputParameters objectAtIndex:0];
-				NSString *outParamType = [self cocoaTypeForSoapType:[outParam objectForKey:@"type"]];
-				
-				NSString *convertedVariable = [self conversionFromNSStringToType:outParamType variable:@"result"];
-				[classBody appendFormat:@"\treturn %@;\n", convertedVariable];
-
-			}
 		}	
 		else
 		{
-			printf("Unknown transport with schema '%s'", [suboperation.namespace cStringUsingEncoding:NSUTF8StringEncoding] );
-			exit (1);
+			[classBody appendFormat:@"#error Unknown transport with schema '%@'\n", suboperation.namespace];;
 		}
 
-		[classBody appendFormat:@"}\n", prototype];
+		[classBody appendString:@"\tNSURLResponse *response;\n"];
+		[classBody appendString:@"\tNSError *error;\n"];
+		[classBody appendString:@"\tNSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];\n"];
+		[classBody appendString:@"\tXMLdocument *xml = [XMLdocument documentWithData:data];\n"];
+		[classBody appendString:@"\tNSString *result = xml.documentRoot.text;\n"];
+		
+		if (outputParameters)
+		{
+			NSDictionary *outParam = [outputParameters objectAtIndex:0];
+			NSString *outParamType = [self cocoaTypeForSoapType:[outParam objectForKey:@"type"]];
+			
+			NSString *convertedVariable = [self conversionFromNSStringToType:outParamType variable:@"result"];
+			
+			if (convertedVariable)
+			{
+				[classBody appendFormat:@"\treturn %@;\n", convertedVariable];
+			}
+			else
+			{
+				[classBody appendFormat:@"#error complex type '%@' not yet implemented\n", [outParam objectForKey:@"type"]];
+			}
+		}
+		
+		[classBody appendFormat:@"}\n\n", prototype];
 	}
 	
 	[classBody appendString:@"\n@end"];

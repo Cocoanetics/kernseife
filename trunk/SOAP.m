@@ -29,10 +29,14 @@ int main (int argc, const char * argv[]) {
 	
 	NSString *source = [NSString stringWithCString:argv[1] encoding:NSUTF8StringEncoding];
 	
-	// try as URL
-	NSURL *url = [NSURL URLWithString:source];
+
+	NSURL *url;
 	
-	if (!url)
+	if ([source hasPrefix:@"http://"])
+	{
+		url = [NSURL URLWithString:source];
+	}
+	else
 	{
 		// try as file
 		url = [NSURL fileURLWithPath:source];
