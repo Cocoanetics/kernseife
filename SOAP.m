@@ -11,8 +11,8 @@
 
 void showUsage()
 {
-	printf("SOAP objC Proxy Class Builder\n");
-	printf("Usage: SOAP <source>\n");
+	printf("SOAP objC Proxy Class Builder\n\n");
+	printf("Usage: Kernseife <source>\n");
 	printf("   <source> path or URL\n\n");
 }
 
