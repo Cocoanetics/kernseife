@@ -495,6 +495,7 @@
 		XMLelement *suboperation = [operationInBinding getNamedChild:@"operation"];
 
 		SOAPVersion soapVersion = [self versionOfSOAPSchema:suboperation.namespace];
+		NSString *resultString;
 		
 		if (soapVersion!=SOAPVersionNone)
 		{
@@ -529,6 +530,8 @@
 				[classBody appendFormat:@"\tNSURLRequest *request = [self makeSOAPRequestWithLocation:location Parameters:paramArray Operation:@\"%@\" Namespace:@\"%@\" Action:@\"%@\" SOAPVersion:SOAPVersion1_2];\n", operationName, targetNamespace, soapAction];
 			}
 			
+			
+			resultString = @"\tNSString *result = [self returnValueFromSOAPResponse:xml];\n";
 		}
 		else if ([suboperation.namespace isEqualToString:@"http://schemas.xmlsoap.org/wsdl/http/"])
 		{
@@ -557,6 +560,7 @@
 			}
 			
 			[classBody appendFormat:@"\tNSURLRequest *request = [self make%@RequestWithLocation:location Parameters:paramDict];\n", verb];
+			resultString = @"\tNSString *result = xml.documentRoot.text;\n";
 		}	
 		else
 		{
@@ -567,7 +571,7 @@
 		[classBody appendString:@"\tNSError *error;\n"];
 		[classBody appendString:@"\tNSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];\n"];
 		[classBody appendString:@"\tXMLdocument *xml = [XMLdocument documentWithData:data];\n"];
-		[classBody appendString:@"\tNSString *result = xml.documentRoot.text;\n"];
+		[classBody appendString:resultString];
 		
 		if (outputParameters)
 		{
