@@ -9,6 +9,7 @@
 #import "WSDLdocument.h"
 #import "NSArray+XMLelement.h"
 #import "NSString+Helpers.h"
+#import "NSDate+xml.h"
 #import "WebService.h"
 
 @implementation WSDLdocument
@@ -248,6 +249,90 @@
 }
 
 
+- (NSString *)conversionFromNSStringToType:(NSString *)otherType variable:(NSString *)variable
+{
+	if ([otherType isEqualToString:@"NSString *"])
+	{
+		// no conversion necessary
+		return variable;
+	}
+	else if ([otherType isEqualToString:@"NSInteger"])
+	{
+		// convert to int
+		return [NSString stringWithFormat:@"[%@ intValue]", variable];
+	}
+	else if ([otherType isEqualToString:@"double"])
+	{
+		// convert to double
+		return [NSString stringWithFormat:@"[%@ doubleValue]", variable];
+	}
+	else if ([otherType isEqualToString:@"NSDate *"])
+	{
+		// convert to NSDate
+		return [NSString stringWithFormat:@"[%@ dateFromISO8601]", variable];
+	}
+	
+	return @"Unknown";
+}
+
+- (NSString *)conversionFromTypeToNSString:(NSString *)otherType variable:(NSString *)variable
+{
+	if ([otherType isEqualToString:@"NSString *"])
+	{
+		// no conversion necessary
+		return variable;
+	}
+	else if ([otherType isEqualToString:@"NSInteger"])
+	{
+		// convert to int
+		return [NSString stringWithFormat:@"[NSString stringWithFormat:@\"%%d\", %@]", variable];
+	}
+	else if ([otherType isEqualToString:@"double"])
+	{
+		// convert to double
+		return [NSString stringWithFormat:@"[NSString stringWithFormat:@\"%%f\", %@]", variable];
+	}
+	else if ([otherType isEqualToString:@"NSDate *"])
+	{
+		// convert to NSDate
+		return [NSString stringWithFormat:@"[%@ ISO8601string]", variable];
+	}
+	
+	return @"Unknown";
+}
+
+/*
+- (NSString *)conversionFromCocoaTypeToNSString:(NSString *)cocoaType variable:(NSString *)variable
+{
+	if ([cocoaType isEqualToString:@"string"])
+	{
+		// no conversion necessary
+		return variable;
+	}
+	else if ([cocoaType isEqualToString:@"NSInteger"])
+	{
+		// convert to int
+		return [NSString stringWithFormat:@"[%@ intValue]", variable];
+	}
+	else if ([cocoaType isEqualToString:@"double"])
+	{
+		// convert to double
+		return [NSString stringWithFormat:@"[%@ doubleValue]", variable];
+	}
+	else if ([cocoaType isEqualToString:@"NSDate *"])
+	{
+		// convert to NSDate
+		return [NSString stringWithFormat:@"[%@ dateFromISO8601]", variable];
+	}
+	
+	return @"Unknown";
+}
+*/
+
+
+
+
+
 
 
 // constructs objC prototype for .h and .m
@@ -361,6 +446,7 @@
 	[classHeader appendString:@"#import <Foundation/Foundation.h>\n"];
 	[classHeader appendString:@"#import \"WebService.h\"\n\n"];
 	[classHeader appendString:@"#import \"NSString+Helpers.h\"\n\n"];
+	[classHeader appendString:@"#import \"NSDate+xml.h\"\n\n"];
 	[classHeader appendFormat:@"@interface %@ : WebService\n{\n}\n\n", [self serviceName]];
 	
 	for (XMLelement *oneOperation in operations)
@@ -429,9 +515,11 @@
 			for (NSDictionary *oneParam in inputParameters)
 			{
 				NSString *paramName = [oneParam objectForKey:@"name"];
+				NSString *paramType = [self cocoaTypeForSoapType:[oneParam objectForKey:@"type"]];
 				NSString *methodParamName = [[oneParam objectForKey:@"name"] stringWithLowercaseFirstLetter];
+				NSString *convertedVariable = [self conversionFromTypeToNSString:paramType variable:methodParamName];
 				
-				[classBody appendFormat:@"\t[paramArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@\"%@\", @\"name\",[%@ description], @\"value\", nil]];\n", paramName, methodParamName];
+				[classBody appendFormat:@"\t[paramArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@\"%@\", @\"name\",[%@ description], @\"value\", nil]];\n", paramName, convertedVariable];
 			}
 			
 			if (soapVersion==SOAPVersion1_0)
@@ -454,35 +542,8 @@
 				NSDictionary *outParam = [outputParameters objectAtIndex:0];
 				NSString *outParamType = [self cocoaTypeForSoapType:[outParam objectForKey:@"type"]];
 				
-				if ([outParamType isEqualToString:@"NSString *"])
-				{
-					// no conversion necessary
-					[classBody appendString:@"\treturn result;\n"];
-				}
-				else if ([outParamType isEqualToString:@"NSInteger"])
-				{
-					// convert to int
-					[classBody appendString:@"\treturn [result intValue];\n"];
-				}
-				else if ([outParamType isEqualToString:@"double"])
-				{
-					// convert to int
-					[classBody appendString:@"\treturn [result doubleValue];\n"];
-				}
-				else if ([outParamType isEqualToString:@"NSDate *"])
-				{
-					// convert to NSDate
-					[classBody appendString:@"\treturn [result dateFromISO8601];\n"];
-				}
-				else {
-					printf("No implementation to convert to '%s'", [outParamType UTF8String]);
-					exit(1);
-				}
-
-			}
-			else
-			{
-				[classBody appendString:@"\t// no return value\n"];
+				NSString *convertedVariable = [self conversionFromNSStringToType:outParamType variable:@"result"];
+				[classBody appendFormat:@"\treturn %@;\n", convertedVariable];
 			}
 		}
 		else if ([suboperation.namespace isEqualToString:@"http://schemas.xmlsoap.org/wsdl/http/"])
@@ -524,34 +585,9 @@
 				NSDictionary *outParam = [outputParameters objectAtIndex:0];
 				NSString *outParamType = [self cocoaTypeForSoapType:[outParam objectForKey:@"type"]];
 				
-				if ([outParamType isEqualToString:@"NSString *"])
-				{
-					// no conversion necessary
-					[classBody appendString:@"\treturn result;\n"];
-				}
-				else if ([outParamType isEqualToString:@"NSInteger"])
-				{
-					// convert to int
-					[classBody appendString:@"\treturn [result intValue];\n"];
-				}
-				else if ([outParamType isEqualToString:@"double"])
-				{
-					// convert to double
-					[classBody appendString:@"\treturn [result doubleValue];\n"];
-				}
-				else if ([outParamType isEqualToString:@"NSDate *"])
-				{
-					// convert to NSDate
-					[classBody appendString:@"\treturn [result dateFromISO8601];\n"];
-				}
-				else {
-					printf("No implementation to convert to '%s'", [outParamType UTF8String]);
-					exit(1);
-				}
-			}
-			else
-			{
-				[classBody appendString:@"\t// no return value\n"];
+				NSString *convertedVariable = [self conversionFromNSStringToType:outParamType variable:@"result"];
+				[classBody appendFormat:@"\treturn %@;\n", convertedVariable];
+
 			}
 		}	
 		else

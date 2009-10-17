@@ -59,7 +59,7 @@ int main (int argc, const char * argv[]) {
 	
 	for (NSString *onePortName in ports)
 	{
-		printf("- %s", [onePortName UTF8String]);
+		printf("- %s\n", [onePortName UTF8String]);
 	}
 	
 	printf("\n");
