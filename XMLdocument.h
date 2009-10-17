@@ -24,7 +24,7 @@
 
 @interface XMLdocument : NSObject
 
-#ifdef TARGET_OS_MAC
+#ifndef TARGET_OS_IPHONE
 <NSXMLParserDelegate>
 #endif
 

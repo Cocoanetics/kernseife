@@ -54,6 +54,7 @@
     if ([str hasSuffix:@"Z"]) 
 	{
 		[str deleteCharactersInRange:NSMakeRange(str.length-1, 1)];
+		[sISO8601 setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
     }    
     NSDate *d = [sISO8601 dateFromString:str];
 	[str release];

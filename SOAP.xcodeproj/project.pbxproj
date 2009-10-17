@@ -18,6 +18,7 @@
 		A71A92E910891F3700C61988 /* XMLelement.m in Sources */ = {isa = PBXBuildFile; fileRef = A71A92DF10891F3700C61988 /* XMLelement.m */; };
 		A71A92EA10891F3700C61988 /* WSDLdocument.m in Sources */ = {isa = PBXBuildFile; fileRef = A71A92E110891F3700C61988 /* WSDLdocument.m */; };
 		A71A92EB10891F3700C61988 /* WebService.m in Sources */ = {isa = PBXBuildFile; fileRef = A71A92E310891F3700C61988 /* WebService.m */; };
+		A71A95B3108A29E900C61988 /* NSDate+xml.m in Sources */ = {isa = PBXBuildFile; fileRef = A71A95B2108A29E900C61988 /* NSDate+xml.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -52,6 +53,8 @@
 		A71A92E110891F3700C61988 /* WSDLdocument.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WSDLdocument.m; sourceTree = "<group>"; };
 		A71A92E210891F3700C61988 /* WebService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebService.h; sourceTree = "<group>"; };
 		A71A92E310891F3700C61988 /* WebService.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebService.m; sourceTree = "<group>"; };
+		A71A95B1108A29E900C61988 /* NSDate+xml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDate+xml.h"; sourceTree = "<group>"; };
+		A71A95B2108A29E900C61988 /* NSDate+xml.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDate+xml.m"; sourceTree = "<group>"; };
 		C6859EA3029092ED04C91782 /* SOAP.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = SOAP.1; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -111,6 +114,8 @@
 		A70584BA1086338A0060BF64 /* XML */ = {
 			isa = PBXGroup;
 			children = (
+				A71A95B1108A29E900C61988 /* NSDate+xml.h */,
+				A71A95B2108A29E900C61988 /* NSDate+xml.m */,
 				A71A92D810891F3700C61988 /* NSString+Helpers.h */,
 				A71A92D910891F3700C61988 /* NSString+Helpers.m */,
 				A71A92DA10891F3700C61988 /* NSArray+XMLelement.h */,
@@ -185,6 +190,7 @@
 				A71A92E910891F3700C61988 /* XMLelement.m in Sources */,
 				A71A92EA10891F3700C61988 /* WSDLdocument.m in Sources */,
 				A71A92EB10891F3700C61988 /* WebService.m in Sources */,
+				A71A95B3108A29E900C61988 /* NSDate+xml.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

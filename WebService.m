@@ -84,14 +84,14 @@
 	
 	for (NSDictionary *oneParameter in parameters)
 	{
-		[envelope appendFormat:@"<%@>%@</%@>\n", [oneParameter objectForKey:@"name"], [oneParameter objectForKey:@"value"], [oneParameter objectForKey:@"name"]];
+		[envelope appendFormat:@"<%@>%@</%@>\n", [oneParameter objectForKey:@"name"], [[oneParameter objectForKey:@"value"] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [oneParameter objectForKey:@"name"]];
 	}			
 	
 	[envelope appendFormat:@"</%@>\n", operation];
 	[envelope appendString:@"</soap:Body>\n"];
 	[envelope appendString:@"</soap:Envelope>\n"];
 	
-	
+	NSLog(@"%@", envelope);
 	NSMutableURLRequest *request = [[[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:url]] autorelease];
 	
 	[request setHTTPMethod:@"POST"];
