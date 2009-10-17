@@ -30,6 +30,11 @@
 	return [service.attributes objectForKey:@"name"];
 }
 
+- (NSString *)description
+{
+	return [documentRoot description];
+}
+
 - (void)processingAfterLoading
 {
 	service = [self.documentRoot getNamedChild:@"service"];
