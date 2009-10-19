@@ -245,5 +245,20 @@ static int indentLevel = 0;
 	return titleElement.text;
 }
 
+- (id) performActionOnElements:(SEL)selector target:(id)aTarget
+{
+	// execute action for self
+	//[aTarget performSelector:selector withObject:self];
+	
+	// now for all children
+	for (XMLelement *oneChild in children)
+	{
+		[oneChild performActionOnElements:selector target:aTarget];
+		[aTarget performSelector:selector withObject:oneChild];
+	}
+	
+	return nil;
+}
+
 
 @end

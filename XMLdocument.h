@@ -28,6 +28,8 @@
 <NSXMLParserDelegate>
 #endif
 
+
+
 {
 	XMLelement *documentRoot;
 	
@@ -65,5 +67,7 @@
 - (id) initWithContentsOfURL:(NSURL *)url delegate:(id<XMLdocumentDelegate>)XMLdocumentDelegate;
 
 - (void) cancelLoading;
+
+- (id) performActionOnElements:(SEL)selector target:(id)aTarget;
 
 @end
