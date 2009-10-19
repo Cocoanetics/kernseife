@@ -157,15 +157,9 @@
 	for (NSDictionary *oneParameter in parameters)
 	{
 		NSObject *value = [oneParameter objectForKey:@"value"];
+		NSString *parameterName = [[oneParameter objectForKey:@"name"] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_"]];
 		
-		if ([[value class] isKindOfClass:[NSString class]] ||
-			[[value class] isKindOfClass:[NSNumber class]])
-		{
-			[envelope appendFormat:@"<%@>%@</%@>\n", [oneParameter objectForKey:@"name"], [[[oneParameter objectForKey:@"value"] description] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [oneParameter objectForKey:@"name"]];
-		}
-		else {
-			[envelope appendFormat:@"<%@>%@</%@>\n", [oneParameter objectForKey:@"name"], [[[oneParameter objectForKey:@"value"] description] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [oneParameter objectForKey:@"name"]];
-		}
+		[envelope appendFormat:@"<%@>%@</%@>\n", parameterName, [[value description] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding], parameterName];
 	}			
 	
 	[envelope appendFormat:@"</%@>\n", operation];
