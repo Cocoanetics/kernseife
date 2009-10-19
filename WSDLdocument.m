@@ -940,7 +940,6 @@
 			}
 			else
 			{
-				NSLog(@"%@", [outParam objectForKey:@"type"]);
 				[classBody appendFormat:@"\treturn [self returnComplexTypeFromSOAPResponse:xml asClass:[%@ class]];  // complex type \n", [outParam objectForKey:@"type"]];
 				//[classBody appendFormat:@"#error complex type '%@' not yet implemented\n", [outParam objectForKey:@"type"]];
 			}
