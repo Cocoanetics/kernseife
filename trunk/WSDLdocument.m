@@ -521,10 +521,8 @@
 	
 	if ([elementName isEqualToString:@"return"])
 	{
-		elementName = @"_return";
+		elementName = @"_return";  // reserved word in objC
 	}
-	
-	NSLog(@"%@", element);
 	
 	if (!elementType)
 	{
@@ -603,7 +601,7 @@
 
 
 
-
+/*
 - (NSMutableString *) appendElementAsComplexTypeHeaderToString:(NSMutableString *)tmpString element:(XMLelement *)simpleElement
 {
 	NSString *elementName = [simpleElement.attributes objectForKey:@"name"];
@@ -804,7 +802,8 @@
 	
 	return tmpString;
 }
-
+*/
+ 
 - (NSString *)headerForComplexTypes
 {
 	NSMutableString *tmpString = [NSMutableString string];
