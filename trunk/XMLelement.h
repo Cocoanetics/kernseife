@@ -32,7 +32,7 @@
 - (void) changeTextForNamedChild:(NSString *)childName toText:(NSString *)newText;
 - (XMLelement *) addChildWithName:(NSString *)childName text:(NSString *)childText;
 
-
+- (id) performActionOnElements:(SEL)selector target:(id)aTarget;
 
 @property (nonatomic, readonly) NSString *title;
 @property (nonatomic, readonly) NSURL *link;

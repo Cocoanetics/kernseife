@@ -21,5 +21,8 @@ typedef enum { SOAPVersionNone = 0, SOAPVersion1_0 = 1, SOAPVersion1_2 = 2 } SOA
 - (NSURLRequest *) makeSOAPRequestWithLocation:(NSString *)url Parameters:(NSArray *)parameters Operation:(NSString *)operation Namespace:(NSString *)namespace Action:(NSString *)action SOAPVersion:(SOAPVersion)soapVersion;
 
 - (NSString *) returnValueFromSOAPResponse:(XMLdocument *)envelope;
+- (id) returnComplexTypeFromSOAPResponse:(XMLdocument *)envelope asClass:(Class)retClass;
+
+- (BOOL) isBoolStringYES:(NSString *)string;
 
 @end

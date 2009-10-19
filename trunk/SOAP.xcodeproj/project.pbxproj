@@ -114,6 +114,8 @@
 		A70584BA1086338A0060BF64 /* XML */ = {
 			isa = PBXGroup;
 			children = (
+				A71A92E210891F3700C61988 /* WebService.h */,
+				A71A92E310891F3700C61988 /* WebService.m */,
 				A71A95B1108A29E900C61988 /* NSDate+xml.h */,
 				A71A95B2108A29E900C61988 /* NSDate+xml.m */,
 				A71A92D810891F3700C61988 /* NSString+Helpers.h */,
@@ -126,8 +128,6 @@
 				A71A92DF10891F3700C61988 /* XMLelement.m */,
 				A71A92E010891F3700C61988 /* WSDLdocument.h */,
 				A71A92E110891F3700C61988 /* WSDLdocument.m */,
-				A71A92E210891F3700C61988 /* WebService.h */,
-				A71A92E310891F3700C61988 /* WebService.m */,
 			);
 			name = XML;
 			sourceTree = "<group>";

@@ -12,6 +12,75 @@
 
 @implementation WebService
 
+#pragma mark Conversions
+
+- (NSString *)conversionFromNSStringToType:(NSString *)otherType variable:(NSString *)variable
+{
+	if ([otherType isEqualToString:@"NSString *"])
+	{
+		// no conversion necessary
+		return variable;
+	}
+	else if ([otherType isEqualToString:@"NSInteger"])
+	{
+		// convert to int
+		return [NSString stringWithFormat:@"[%@ intValue]", variable];
+	}
+	else if ([otherType isEqualToString:@"double"])
+	{
+		// convert to double
+		return [NSString stringWithFormat:@"[%@ doubleValue]", variable];
+	}
+	else if ([otherType isEqualToString:@"NSDate *"])
+	{
+		// convert to NSDate
+		return [NSString stringWithFormat:@"[%@ dateFromISO8601]", variable];
+	}
+	
+	return nil;
+}
+
+- (NSString *)conversionFromTypeToNSString:(NSString *)otherType variable:(NSString *)variable
+{
+	if ([otherType isEqualToString:@"NSString *"])
+	{
+		// no conversion necessary
+		return variable;
+	}
+	else if ([otherType isEqualToString:@"NSInteger"])
+	{
+		// convert to int
+		return [NSString stringWithFormat:@"[NSString stringWithFormat:@\"%%d\", %@]", variable];
+	}
+	else if ([otherType isEqualToString:@"double"])
+	{
+		// convert to double
+		return [NSString stringWithFormat:@"[NSString stringWithFormat:@\"%%f\", %@]", variable];
+	}
+	else if ([otherType isEqualToString:@"NSDate *"])
+	{
+		// convert to NSDate
+		return [NSString stringWithFormat:@"[%@ ISO8601string]", variable];
+	}
+	
+	return nil;
+}
+
+- (BOOL) isBoolStringYES:(NSString *)string
+{
+	if ([[string lowercaseString] isEqualToString:@"false"] ||
+		[[string lowercaseString] isEqualToString:@"0"])
+	{
+		return NO;
+	}
+	else
+	{
+		return YES;
+	}
+}
+
+#pragma mark Requests
+
 - (NSURLRequest *) makeGETRequestWithLocation:(NSString *)url Parameters:(NSDictionary *)parameters
 {
 	NSMutableString *query = [NSMutableString string];
@@ -64,8 +133,10 @@
 	return request;
 }
 
+
 - (NSURLRequest *) makeSOAPRequestWithLocation:(NSString *)url Parameters:(NSArray *)parameters Operation:(NSString *)operation Namespace:(NSString *)namespace Action:(NSString *)action SOAPVersion:(SOAPVersion)soapVersion;
 {
+	
 	NSMutableString *envelope = [NSMutableString string];
 	
 	[envelope appendString:@"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"];
@@ -81,15 +152,29 @@
 	[envelope appendString:@"<soap:Body>\n"];
 
 	[envelope appendFormat:@"<%@ xmlns=\"%@\">\n", operation, namespace];
+
 	
 	for (NSDictionary *oneParameter in parameters)
 	{
-		[envelope appendFormat:@"<%@>%@</%@>\n", [oneParameter objectForKey:@"name"], [[oneParameter objectForKey:@"value"] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [oneParameter objectForKey:@"name"]];
+		NSObject *value = [oneParameter objectForKey:@"value"];
+		
+		if ([[value class] isKindOfClass:[NSString class]] ||
+			[[value class] isKindOfClass:[NSNumber class]])
+		{
+			[envelope appendFormat:@"<%@>%@</%@>\n", [oneParameter objectForKey:@"name"], [[[oneParameter objectForKey:@"value"] description] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [oneParameter objectForKey:@"name"]];
+		}
+		else {
+			[envelope appendFormat:@"<%@>%@</%@>\n", [oneParameter objectForKey:@"name"], [[[oneParameter objectForKey:@"value"] description] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [oneParameter objectForKey:@"name"]];
+		}
 	}			
 	
 	[envelope appendFormat:@"</%@>\n", operation];
 	[envelope appendString:@"</soap:Body>\n"];
 	[envelope appendString:@"</soap:Envelope>\n"];
+
+	//NSLog(@"%@", parameters);
+	//NSLog(@"%@", envelope);
+
 	
 	NSMutableURLRequest *request = [[[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:url]] autorelease];
 	
@@ -120,5 +205,28 @@
 		return nil;
 	}
 }
+
+- (id) returnComplexTypeFromSOAPResponse:(XMLdocument *)envelope asClass:(Class)retClass
+{
+	// create a new instance of expected class
+	
+	id newObject = [[[retClass alloc] init] autorelease];
+	
+	XMLelement *body = [envelope.documentRoot getNamedChild:@"Body"];
+	XMLelement *response = [body.children lastObject];  // there should be only one
+
+	XMLelement *result = [response.children lastObject];  // there should be only one
+
+	
+	for (XMLelement *oneChild in result.children)
+	{
+		// this seems to work for scalars as well as strings without problem
+		[newObject setValue:oneChild.text forKey:oneChild.name];
+	}
+	
+	return newObject;
+}
+
+
 
 @end

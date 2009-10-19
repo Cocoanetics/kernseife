@@ -391,6 +391,14 @@
 	
 }
 
+- (id) performActionOnElements:(SEL)selector target:(id<NSObject>)aTarget
+{
+	// first on documentRoot
+	
+	[documentRoot performActionOnElements:selector target:aTarget];
+	
+	return nil;
+}
 	
 
 @end

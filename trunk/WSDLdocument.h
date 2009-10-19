@@ -17,6 +17,10 @@
 	
 	XMLelement *types;
 	XMLelement *schema;
+	
+	// buffer
+	NSMutableString *elementWalkerBuffer;
+	NSMutableDictionary *elementWalkerDict;
 }
 
 - (NSArray *)portNames;
