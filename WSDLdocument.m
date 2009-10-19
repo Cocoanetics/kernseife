@@ -31,16 +31,12 @@
 	[super dealloc];
 }
 
-- (NSString *) serviceName
-{
-	return [service.attributes objectForKey:@"name"];
-}
-
 - (NSString *)description
 {
 	return [documentRoot description];
 }
 
+#pragma mark Utils
 // creates dictionary of types
 - (void) elementWalker:(XMLelement *)element
 {
@@ -92,10 +88,6 @@
 	ports = [service getNamedChildren:@"port"];
 	types = [documentRoot getNamedChild:@"types"];
 	schema = [types getNamedChild:@"schema"];
-	
-	//[self elementWalker:schema];
-	
-	//NSLog(@"%@", elementWalkerDict);
 }
 
 
@@ -277,6 +269,7 @@
 	}
 }
 
+#pragma mark Type Conversions
 - (NSString *)cocoaTypeForSoapType:(NSString *)soapType
 {
 	if ([soapType isEqualToString:@"string"])
@@ -412,6 +405,9 @@
 	return nil;
 }
 
+
+
+#pragma mark Writing Class Files
 // constructs objC prototype for .h and .m
 - (NSString *)prototypeForOperation:(XMLelement *)operation
 {
@@ -492,29 +488,7 @@
 	return [NSString stringWithString:retStr];
 }
 
-/*
- <s:element name="SendNotificationAsAppToAllResponse">
- <s:complexType>
- <s:sequence>
- <s:element minOccurs="1" maxOccurs="1" name="SendNotificationAsAppToAllResult" type="s:int" />
- </s:sequence>
- </s:complexType>
- </s:element>
- 
- 
- 
- <xs:complexType name="RegisterImageResponseType">
- <xs:sequence>
- <xs:element name="requestId" type="xs:string"/>
- <xs:element name="imageId" type="xs:string"/>
- </xs:sequence>
- </xs:complexType>
- 
- */
-
-
-
-- (NSMutableDictionary *) addElementTypesToDictionary:(NSMutableDictionary *)elementDict element:(XMLelement *)element
+- (NSMutableArray *) addElementTypesToArray:(NSMutableArray *)elementArray element:(XMLelement *)element
 {
 	NSString *elementName = [element.attributes objectForKey:@"name"];
 	NSString *elementType = [element.attributes objectForKey:@"type"];
@@ -548,7 +522,8 @@
 				cocoaType = [NSString stringWithFormat:@"%@ *", type];
 			}
 			
-			[elementDict setObject:cocoaType forKey:elementName];
+			NSDictionary *elementDict = [NSDictionary dictionaryWithObjectsAndKeys:cocoaType, @"type", elementName, @"name", nil];
+			[elementArray addObject:elementDict];
 		}
 		else
 		{
@@ -562,7 +537,8 @@
 				NSString *ref_without_ns = [[ref componentsSeparatedByString:@":"] lastObject];
 				
 				XMLelement *thisGroupElement = [[schema getNamedChildren:@"group" WithAttribute:@"name" HasValue:ref_without_ns] lastObject];
-				[self addElementTypesToDictionary:elementDict element:thisGroupElement];
+				
+				[self addElementTypesToArray:elementArray element:thisGroupElement];
 			}
 			else
 			{
@@ -574,7 +550,8 @@
 					cocoaType = [NSString stringWithFormat:@"%@ *", type];
 				}
 				
-				[elementDict setObject:cocoaType forKey:elementName];
+				NSDictionary *elementDict = [NSDictionary dictionaryWithObjectsAndKeys:cocoaType, @"type", elementName, @"name", nil];
+				[elementArray addObject:elementDict];
 			}
 			
 		}
@@ -587,7 +564,7 @@
 		{
 			for (XMLelement *oneChoice in element.children)
 			{
-				[self addElementTypesToDictionary:elementDict element:oneChoice];
+				[self addElementTypesToArray:elementArray element:oneChoice];
 			}
 		}
 		else
@@ -596,214 +573,10 @@
 		}
 	}
 	
-	return elementDict;
+	return elementArray;
 }
 
 
-
-/*
-- (NSMutableString *) appendElementAsComplexTypeHeaderToString:(NSMutableString *)tmpString element:(XMLelement *)simpleElement
-{
-	NSString *elementName = [simpleElement.attributes objectForKey:@"name"];
-	NSString *elementType = [simpleElement.attributes objectForKey:@"type"];
-	
-	if ([elementName isEqualToString:@"return"])
-	{
-		elementName = @"_return";
-	}
-	
-	if (!elementType)
-	{
-		// try as ref, like for group
-		elementType = [simpleElement.attributes objectForKey:@"ref"];
-	}
-	
-	NSArray *typeParts = [elementType componentsSeparatedByString:@":"];
-	
-	if ([typeParts count]==2)
-	{
-		NSString *namespace = [typeParts objectAtIndex:0];
-		NSString *type = [typeParts objectAtIndex:1];
-		
-		if ([self namespaceIsXMLSchema:namespace])
-		{
-			// simple standard type
-			NSString *cocoaType = [self cocoaTypeForSoapType:type];
-			
-			if (!cocoaType)
-			{
-				// complex type
-				cocoaType = [NSString stringWithFormat:@"%@ *", type];
-			}
-			
-			[tmpString appendFormat:@"\t%@ %@;\n", cocoaType, elementName];
-		}
-		else
-		{
-			// another complex type
-			[tmpString appendFormat:@"\t%@ *%@;\n", type, elementName];
-		}
-		
-	}
-	else 
-	{
-		// could be a choice or sequence, also append these children
-		
-		if ([simpleElement.name isEqualToString:@"choice"] || [simpleElement.name isEqualToString:@"sequence"])
-		{
-			for (XMLelement *oneChoice in simpleElement.children)
-			{
-				[self appendElementAsComplexTypeHeaderToString:tmpString element:oneChoice];
-			}
-		}
-		else
-		{
-			NSLog(@"%@", simpleElement);
-		}
-	}
-	
-	return tmpString;
-}
-
-- (NSMutableString *) appendElementAsComplexTypePropertyHeaderToString:(NSMutableString *)tmpPropertiesString element:(XMLelement *)simpleElement
-{
-	NSString *elementName = [simpleElement.attributes objectForKey:@"name"];
-	NSString *elementType = [simpleElement.attributes objectForKey:@"type"];
-	
-	if ([elementName isEqualToString:@"return"])
-	{
-		elementName = @"_return";
-	}
-	
-	if (!elementType)
-	{
-		// try as ref, like for group
-		elementType = [simpleElement.attributes objectForKey:@"ref"];
-	}
-	
-	NSArray *typeParts = [elementType componentsSeparatedByString:@":"];
-	
-	if ([typeParts count]==2)
-	{
-		NSString *namespace = [typeParts objectAtIndex:0];
-		NSString *type = [typeParts objectAtIndex:1];
-		
-		if ([self namespaceIsXMLSchema:namespace])
-		{
-			// simple standard type
-			NSString *cocoaType = [self cocoaTypeForSoapType:type];
-			
-			if (!cocoaType)
-			{
-				// complex type
-				cocoaType = [NSString stringWithFormat:@"%@ *", type];
-			}
-			
-			
-			NSString *retainType;
-			
-			if ([cocoaType hasSuffix:@"*"])
-			{
-				retainType = @"retain";
-			}
-			else 
-			{
-				retainType = @"assign";
-			}
-			
-			[tmpPropertiesString appendFormat:@"@property (nonatomic, %@) %@ %@;\n", retainType, cocoaType, elementName];
-		}
-		else
-		{
-			// another complex type
-			[tmpPropertiesString appendFormat:@"@property (nonatomic, retain) %@ *%@;\n", type, elementName];
-		}
-	}
-	else 
-	{
-		// could be a choice or sequence, also append these children
-		
-		if ([simpleElement.name isEqualToString:@"choice"] || [simpleElement.name isEqualToString:@"sequence"])
-		{
-			for (XMLelement *oneChoice in simpleElement.children)
-			{
-				[self appendElementAsComplexTypePropertyHeaderToString:tmpPropertiesString element:oneChoice];
-			}
-		}
-		else
-		{
-			NSLog(@"%@", simpleElement);
-		}
-	}
-	
-	return tmpPropertiesString;
-}
-
-
-- (NSMutableString *) appendElementAsComplexTypeBodyToString:(NSMutableString *)tmpString element:(XMLelement *)simpleElement
-{
-	NSString *elementName = [simpleElement.attributes objectForKey:@"name"];
-	NSString *elementType = [simpleElement.attributes objectForKey:@"type"];
-	
-	if ([elementName isEqualToString:@"return"])
-	{
-		elementName = @"_return";
-	}
-	
-	if (!elementType)
-	{
-		// try as ref, like for group
-		elementType = [simpleElement.attributes objectForKey:@"ref"];
-	}
-	
-	NSArray *typeParts = [elementType componentsSeparatedByString:@":"];
-	
-	if ([typeParts count]==2)
-	{
-		NSString *namespace = [typeParts objectAtIndex:0];
-		NSString *type = [typeParts objectAtIndex:1];
-		
-		if ([self namespaceIsXMLSchema:namespace])
-		{
-			// simple standard type
-			NSString *cocoaType = [self cocoaTypeForSoapType:type];
-			
-			if (!cocoaType)
-			{
-				// complex type
-				cocoaType = [NSString stringWithFormat:@"%@ *", type];
-			}
-			
-			[tmpString appendFormat:@"\t%@ %@;\n", cocoaType, elementName];
-		}
-		else
-		{
-			// another complex type
-			[tmpString appendFormat:@"\t%@ *%@;\n", type, elementName];
-		}
-		
-	}
-	else 
-	{
-		// could be a choice or sequence, also append these children
-		
-		if ([simpleElement.name isEqualToString:@"choice"] || [simpleElement.name isEqualToString:@"sequence"])
-		{
-			for (XMLelement *oneChoice in simpleElement.children)
-			{
-				[self appendElementAsComplexTypeHeaderToString:tmpString element:oneChoice];
-			}
-		}
-		else
-		{
-			NSLog(@"%@", simpleElement);
-		}
-	}
-	
-	return tmpString;
-}
-*/
- 
 - (NSString *)headerForComplexTypes
 {
 	NSMutableString *tmpString = [NSMutableString string];
@@ -823,33 +596,40 @@
 			
 			XMLelement *child = [element.children lastObject];  // should be only one
 			
-			NSMutableDictionary *elementTypeDict = [NSMutableDictionary dictionary];
-			[self addElementTypesToDictionary:elementTypeDict element:child];
+			//NSMutableDictionary *elementTypeDict = [NSMutableDictionary dictionary];
+			NSMutableArray *elementTypeArray = [NSMutableArray array];
+			//[self addElementTypesToDictionary:elementTypeDict element:child];
 			
-			NSArray *sortedKeys = [[elementTypeDict allKeys] sortedArrayUsingSelector:@selector(compare:)];
+			//NSArray *sortedKeys = [[elementTypeDict allKeys] sortedArrayUsingSelector:@selector(compare:)];
+			
+			
+			[self addElementTypesToArray:elementTypeArray element:child];
+			
 			
 			// write ivars
 			
 			[tmpString appendFormat:@"@interface %@ : NSObject\n", className];
 			[tmpString appendString:@"{\n"];
 			
-			for (NSString *oneKey in sortedKeys)
+			for (NSDictionary *oneElement in elementTypeArray)
 			{
-				NSString *elementType = [elementTypeDict objectForKey:oneKey];
+				NSString *elementName = [oneElement objectForKey:@"name"];
+				NSString *elementType = [oneElement objectForKey:@"type"];
 				
-				[tmpString appendFormat:@"\t%@ %@;\n", elementType, oneKey];
+				[tmpString appendFormat:@"\t%@ %@;\n", elementType, elementName];
 			}
 
 			[tmpString appendString:@"}\n"];
 
 			// write properties
 			
-			for (NSString *oneKey in sortedKeys)
+			for (NSDictionary *oneElement in elementTypeArray)
 			{
-				NSString *elementType = [elementTypeDict objectForKey:oneKey];
+				NSString *elementName = [oneElement objectForKey:@"name"];
+				NSString *elementType = [oneElement objectForKey:@"type"];
 				NSString *retainType = ([elementType hasSuffix:@"*"]?@"retain":@"assign");
 				
-				[tmpString appendFormat:@"\t@property (nonatomic, %@) %@ %@;\n", retainType, elementType, oneKey];
+				[tmpString appendFormat:@"\t@property (nonatomic, %@) %@ %@;\n", retainType, elementType, elementName];
 			}
 			
 			[tmpString appendString:@"@end\n\n\n"];
@@ -884,28 +664,30 @@
 			
 			XMLelement *child = [element.children lastObject];  // should be only one
 			
-			NSMutableDictionary *elementTypeDict = [NSMutableDictionary dictionary];
-			[self addElementTypesToDictionary:elementTypeDict element:child];
+			NSMutableArray *elementTypeArray = [NSMutableArray array];
+			[self addElementTypesToArray:elementTypeArray element:child];
 			
-			NSArray *sortedKeys = [[elementTypeDict allKeys] sortedArrayUsingSelector:@selector(compare:)];
-						
-			for (NSString *oneKey in sortedKeys)
+			for (NSDictionary *oneElement in elementTypeArray)
 			{
-				if ([[elementTypeDict objectForKey:oneKey] hasSuffix:@"*"])
+				NSString *elementName = [oneElement objectForKey:@"name"];
+				NSString *elementType = [oneElement objectForKey:@"type"];
+				
+				if ([elementType hasSuffix:@"*"])
 				{
-					[tmpDeallocString appendFormat:@"\t[%@ release];\n", oneKey];
+					[tmpDeallocString appendFormat:@"\t[%@ release];\n", elementName];
 				}
 				
-				[tmpString appendFormat:@"\t@synthesize %@;\n", oneKey];
+				[tmpString appendFormat:@"\t@synthesize %@;\n", elementName];
 			}
 			
 			[tmpString appendString:@"\n-(NSString *) description\n"];
 			[tmpString appendString:@"{\n"];
 			[tmpString appendString:@"\tNSMutableString *tmpRet = [NSMutableString string];\n"];
 			
-			for (NSString *oneKey in sortedKeys)
+			for (NSDictionary *oneElement in elementTypeArray)
 			{
-				[tmpString appendFormat:@"\t[tmpRet appendFormat:@\"<%@>%%@</%@>\", [self valueForKey:@\"%@\"]];\n", oneKey, oneKey, oneKey];
+				NSString *elementName = [oneElement objectForKey:@"name"];
+				[tmpString appendFormat:@"\t[tmpRet appendFormat:@\"<%@>%%@</%@>\", [self valueForKey:@\"%@\"]];\n", elementName, elementName, elementName];
 			}
 			
 			[tmpString appendString:@"\treturn [NSString stringWithString:tmpRet];\n"];
@@ -978,7 +760,9 @@
 	[classHeader appendString:[self headerForComplexTypes]];
 	
 	// main class for service
-	
+	[classHeader appendString:@"#pragma mark -\n"];
+	[classHeader appendString:@"#pragma mark Main WebService Interface\n"];
+
 	[classHeader appendFormat:@"@interface %@ : WebService\n{\n}\n\n", [self serviceName]];
 	
 	for (XMLelement *oneOperation in operations)
@@ -990,7 +774,6 @@
 	}
 	
 	[classHeader appendString:@"\n@end"];
-	
 	
 	// BODY
 	
