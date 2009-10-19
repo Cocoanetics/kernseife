@@ -36,6 +36,11 @@
 	return [documentRoot description];
 }
 
+- (NSString *) serviceName
+{
+	return [service.attributes objectForKey:@"name"];
+}
+
 #pragma mark Utils
 // creates dictionary of types
 - (void) elementWalker:(XMLelement *)element
@@ -307,6 +312,11 @@
 		return @"double";
 	}
 	
+	if ([soapType isEqualToString:@"base64Binary"])
+	{
+		return @"NSData *";
+	}
+	
 	
 	return nil;
 }
@@ -341,6 +351,11 @@
 		//return [NSString stringWithFormat:@"[%@ isEqualToString:@\"true\"]?YES:NO", variable ];
 		return [NSString stringWithFormat:@"[self isBoolStringYES:%@]", variable ];
 	}
+	else if ([otherType isEqualToString:@"NSData *"])
+	{
+		return [NSString stringWithFormat:@"[NSData dataWithBase64EncodedString:%@]", variable];
+	}
+	
 	
 	return nil;
 }
@@ -376,6 +391,11 @@
 	{
 		return [NSString stringWithFormat:@"[%@ ISO8601string]", variable];
 	}
+	else if ([otherType isEqualToString:@"NSData *"])
+	{
+		return [NSString stringWithFormat:@"[%@ base64Encoding]", variable];
+	}
+	
 	return nil;
 }
 
@@ -754,6 +774,8 @@
 	[classHeader appendString:@"#import \"WebService.h\"\n\n"];
 	[classHeader appendString:@"#import \"NSString+Helpers.h\"\n"];
 	[classHeader appendString:@"#import \"NSDate+xml.h\"\n\n"];
+	[classHeader appendString:@"#import \"NSDataAdditions.h\"\n\n"];
+	
 	
 	// add classes for complex data types
 	
@@ -918,6 +940,7 @@
 			}
 			else
 			{
+				NSLog(@"%@", [outParam objectForKey:@"type"]);
 				[classBody appendFormat:@"\treturn [self returnComplexTypeFromSOAPResponse:xml asClass:[%@ class]];  // complex type \n", [outParam objectForKey:@"type"]];
 				//[classBody appendFormat:@"#error complex type '%@' not yet implemented\n", [outParam objectForKey:@"type"]];
 			}

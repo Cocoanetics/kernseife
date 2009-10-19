@@ -9,62 +9,11 @@
 #import "WebService.h"
 #import "XMLdocument.h"
 #import "NSString+Helpers.h"
+#import "NSDataAdditions.h"
 
 @implementation WebService
 
 #pragma mark Conversions
-
-- (NSString *)conversionFromNSStringToType:(NSString *)otherType variable:(NSString *)variable
-{
-	if ([otherType isEqualToString:@"NSString *"])
-	{
-		// no conversion necessary
-		return variable;
-	}
-	else if ([otherType isEqualToString:@"NSInteger"])
-	{
-		// convert to int
-		return [NSString stringWithFormat:@"[%@ intValue]", variable];
-	}
-	else if ([otherType isEqualToString:@"double"])
-	{
-		// convert to double
-		return [NSString stringWithFormat:@"[%@ doubleValue]", variable];
-	}
-	else if ([otherType isEqualToString:@"NSDate *"])
-	{
-		// convert to NSDate
-		return [NSString stringWithFormat:@"[%@ dateFromISO8601]", variable];
-	}
-	
-	return nil;
-}
-
-- (NSString *)conversionFromTypeToNSString:(NSString *)otherType variable:(NSString *)variable
-{
-	if ([otherType isEqualToString:@"NSString *"])
-	{
-		// no conversion necessary
-		return variable;
-	}
-	else if ([otherType isEqualToString:@"NSInteger"])
-	{
-		// convert to int
-		return [NSString stringWithFormat:@"[NSString stringWithFormat:@\"%%d\", %@]", variable];
-	}
-	else if ([otherType isEqualToString:@"double"])
-	{
-		// convert to double
-		return [NSString stringWithFormat:@"[NSString stringWithFormat:@\"%%f\", %@]", variable];
-	}
-	else if ([otherType isEqualToString:@"NSDate *"])
-	{
-		// convert to NSDate
-		return [NSString stringWithFormat:@"[%@ ISO8601string]", variable];
-	}
-	
-	return nil;
-}
 
 - (BOOL) isBoolStringYES:(NSString *)string
 {
