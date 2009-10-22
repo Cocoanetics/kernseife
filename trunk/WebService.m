@@ -170,6 +170,19 @@
 	return newObject;
 }
 
-
+- (XMLdocument *) returnXMLDocumentFromSOAPResponse:(XMLdocument *)envelope
+{
+	// create a new instance of expected class
+	
+	//id newObject = [[[retClass alloc] init] autorelease];
+	
+	XMLelement *body = [envelope.documentRoot getNamedChild:@"Body"];
+	XMLelement *response = [body.children lastObject];  // there should be only one
+	
+	XMLelement *result = [response.children lastObject];  // there should be only one
+	XMLelement *oneMore = [result.children lastObject];  // there should be only one
+	
+	return [XMLdocument documentWithString:[oneMore description]];
+}
 
 @end

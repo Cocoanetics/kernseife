@@ -89,7 +89,7 @@ static int indentLevel = 0;
 		}
 		else
 		{
-			return [NSString stringWithFormat:@"%@<%@%@%@>\n%@%@</%@>\n", indent, name, attributeString, ns, [text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]], indent, name];
+			return [NSString stringWithFormat:@"%@<%@%@%@>%@</%@>\n", indent, name, attributeString, ns, [text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]], name];
 		}
 		
 	}

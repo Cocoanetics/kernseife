@@ -130,7 +130,8 @@
 
 - (NSArray *)parametersOfMessage:(XMLelement *)message
 {
-	//NSString *messageName = [message.attributes objectForKey:@"name"];
+	NSString *messageName = [message.attributes objectForKey:@"name"];
+	NSLog(@"%@", messageName);
 	
 	NSMutableArray *retArray = [NSMutableArray array];
 	
@@ -205,11 +206,23 @@
 										NSString *elementName = [oneElement.attributes objectForKey:@"name"];
 										NSString *elementType = [oneElement.attributes objectForKey:@"type"];
 										
-										NSArray *typeParts = [elementType componentsSeparatedByString:@":"];
+										if (!elementType)
+										{
+											// we assume that's too complicated = Xml
+											NSDictionary *oneParamter = [NSDictionary dictionaryWithObjectsAndKeys:elementName, @"name", @"xml", @"type", nil];
+											[retArray addObject:oneParamter];
+										}
+										else
+										{
+											NSArray *typeParts = [elementType componentsSeparatedByString:@":"];
+
+											NSDictionary *oneParamter = [NSDictionary dictionaryWithObjectsAndKeys:elementName, @"name", [typeParts lastObject], @"type", nil];
+											[retArray addObject:oneParamter];
+										}
+
 										
 										
-										NSDictionary *oneParamter = [NSDictionary dictionaryWithObjectsAndKeys:elementName, @"name", [typeParts lastObject], @"type", nil];
-										[retArray addObject:oneParamter];
+				
 										
 									}
 									
@@ -316,6 +329,11 @@
 	{
 		return @"NSData *";
 	}
+
+	if ([soapType isEqualToString:@"xml"])
+	{
+		return @"XMLdocument *";
+	}
 	
 	
 	return nil;
@@ -356,6 +374,12 @@
 		return [NSString stringWithFormat:@"[NSData dataWithBase64EncodedString:%@]", variable];
 	}
 	
+	/* // we don't want this 
+	else if ([otherType isEqualToString:@"XMLdocument *"])
+	{
+		return [NSString stringWithFormat:@"[XMLdocument documentWithString:%@]", variable];
+	}
+	*/
 	
 	return nil;
 }
@@ -395,7 +419,10 @@
 	{
 		return [NSString stringWithFormat:@"[%@ base64Encoding]", variable];
 	}
-	
+	else if ([otherType isEqualToString:@"XMLdocument *"])
+	{
+		return [NSString stringWithFormat:@"[%@ description]", variable];
+	}	
 	return nil;
 }
 
@@ -460,6 +487,8 @@
 	else
 	{
 		NSDictionary *returnParam = [outputParameters lastObject];
+		NSLog(@"%@", returnParam);
+		
 		NSString *returnSoapType = [returnParam objectForKey:@"type"];
 		returnParamType = [self cocoaTypeForSoapType:returnSoapType];
 		
@@ -512,6 +541,8 @@
 {
 	NSString *elementName = [element.attributes objectForKey:@"name"];
 	NSString *elementType = [element.attributes objectForKey:@"type"];
+	
+	NSLog(@"%@", element);
 	
 	if ([elementName isEqualToString:@"return"])
 	{
@@ -940,7 +971,17 @@
 			}
 			else
 			{
-				[classBody appendFormat:@"\treturn [self returnComplexTypeFromSOAPResponse:xml asClass:[%@ class]];  // complex type \n", [outParam objectForKey:@"type"]];
+				NSString *otherType = [outParam objectForKey:@"type"];
+				
+				if ([otherType isEqualToString:@"xml"])
+				{
+					[classBody appendString:@"\treturn [self returnXMLDocumentFromSOAPResponse:xml];  // unknown complex type \n"];
+				}
+				else
+				{
+					[classBody appendFormat:@"\treturn [self returnComplexTypeFromSOAPResponse:xml asClass:[%@ class]];  // complex type \n", otherType];
+				}
+
 				//[classBody appendFormat:@"#error complex type '%@' not yet implemented\n", [outParam objectForKey:@"type"]];
 			}
 		}
