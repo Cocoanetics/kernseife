@@ -170,6 +170,39 @@
 	return newObject;
 }
 
+- (NSArray *) returnArrayFromSOAPResponse:(XMLdocument *)envelope withClass:(Class)retClass
+{
+	NSMutableArray *tmpArray = [NSMutableArray array];
+	
+	XMLelement *body = [envelope.documentRoot getNamedChild:@"Body"];
+	XMLelement *response = [body.children lastObject];  // there should be only one
+	
+	XMLelement *result = [response.children lastObject];  // there should be only one
+	
+	for (XMLelement *oneThing in result.children)
+	{
+		id newObject = [[[retClass alloc] init] autorelease];
+		
+		for (XMLelement *oneChild in oneThing.children)
+		{
+			// this seems to work for scalars as well as strings without problem
+			[newObject setValue:oneChild.text forKey:oneChild.name];
+		}
+		
+		[tmpArray addObject:newObject];
+	}
+	
+	if ([tmpArray count])
+	{
+		return [NSArray arrayWithArray:tmpArray];
+	}
+	else
+	{
+		return nil;
+	}
+
+}
+
 - (XMLdocument *) returnXMLDocumentFromSOAPResponse:(XMLdocument *)envelope
 {
 	// create a new instance of expected class

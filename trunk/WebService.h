@@ -22,6 +22,7 @@ typedef enum { SOAPVersionNone = 0, SOAPVersion1_0 = 1, SOAPVersion1_2 = 2 } SOA
 
 - (NSString *) returnValueFromSOAPResponse:(XMLdocument *)envelope;
 - (id) returnComplexTypeFromSOAPResponse:(XMLdocument *)envelope asClass:(Class)retClass;
+- (NSArray *) returnArrayFromSOAPResponse:(XMLdocument *)envelope withClass:(Class)retClass;
 - (XMLdocument *) returnXMLDocumentFromSOAPResponse:(XMLdocument *)envelope;
 
 - (BOOL) isBoolStringYES:(NSString *)string;

@@ -24,11 +24,9 @@
 
 @interface XMLdocument : NSObject
 
-#ifdef __MAC_OS_X_VERSION_MIN_REQUIRED
-<NSXMLParserDelegate>
+#if !TARGET_OS_IPHONE
+<NSXMLParserDelegate>  // this only when building for Mac
 #endif
-
-
 
 {
 	XMLelement *documentRoot;
