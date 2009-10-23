@@ -12,6 +12,12 @@
 #import "NSDate+xml.h"
 #import "WebService.h"
 
+
+@interface WSDLdocument ()
+- (NSArray *)propertiesOfComplexType:(NSString *)complexTypeName;
+@end
+
+
 @implementation WSDLdocument
 
 
@@ -94,8 +100,8 @@
 		return @"XMLdocument *";
 	}
 	
-	
-	return nil;
+	// assume it's a complex type
+	return [NSString stringWithFormat:@"%@ *", soapType];
 }
 
 
@@ -302,6 +308,16 @@
 
 - (NSMutableArray *) addElementTypesToArray:(NSMutableArray *)elementArray element:(XMLelement *)element
 {
+	if ([element.name isEqualToString:@"choice"] || [element.name isEqualToString:@"sequence"])
+	{
+		for (XMLelement *oneChoice in element.children)
+		{
+			[self addElementTypesToArray:elementArray element:oneChoice];
+		}
+		
+		return elementArray;
+	}
+	
 	NSString *elementName = [element.attributes objectForKey:@"name"];
 	NSString *elementType = [element.attributes objectForKey:@"type"];
 	
@@ -313,7 +329,7 @@
 		NSArray *typeParts = [elementType componentsSeparatedByString:@":"];
 		
 		
-		NSDictionary *elementDict = [NSDictionary dictionaryWithObjectsAndKeys:@"@array", @"type", elementName, @"name", [typeParts lastObject], @"typeInArray", nil];
+		NSDictionary *elementDict = [NSDictionary dictionaryWithObjectsAndKeys:@"@array", @"type", [NSString stringWithFormat:@"arrayOf%@", elementName], @"name", [typeParts lastObject], @"typeInArray", nil];
 		[elementArray addObject:elementDict];
 		
 		return elementArray;
@@ -359,7 +375,7 @@
 			}
 			else
 			{
-				if ([element.name isEqualToString:@"element"])
+				if ([element.name isEqualToString:@"element"]||[element.name isEqualToString:@"attribute"])
 				{
 					NSString *elementName = [element.attributes objectForKey:@"name"];
 					NSString *elementType = [element.attributes objectForKey:@"type"];
@@ -391,7 +407,9 @@
 	{
 		// could be a choice or sequence, also append these children
 		
-		if ([element.name isEqualToString:@"choice"] || [element.name isEqualToString:@"sequence"] || [element.name isEqualToString:@"complexType"])
+		// if complexType, we need to check if it's array  || [element.name isEqualToString:@"complexType"]
+		
+		if ([element.name isEqualToString:@"choice"] || [element.name isEqualToString:@"sequence"] || [element.name isEqualToString:@"complexType"] || [element.name isEqualToString:@"group"])
 		{
 			for (XMLelement *oneChoice in element.children)
 			{
@@ -400,7 +418,10 @@
 		}
 		else
 		{
-			NSLog(@"%@", element);
+			if (element)
+			{
+				NSLog(@"%@", element);
+			}
 		}
 	}
 	
@@ -410,7 +431,7 @@
 
 - (NSArray *)parametersOfMessage:(XMLelement *)message
 {
-	NSString *messageName = [message.attributes objectForKey:@"name"];
+	//NSString *messageName = [message.attributes objectForKey:@"name"];
 	
 	NSMutableArray *retArray = [NSMutableArray array];
 	
@@ -452,6 +473,10 @@
 					// must be defined type
 					XMLelement *element = [[schema getNamedChildren:@"element" WithAttribute:@"name" HasValue:type] lastObject];
 					
+					if (!element)
+					{
+						NSLog(@"Not found element with name %@", type);
+					}
 					
 					NSString *elementName = [onePart.attributes objectForKey:@"name"];	
 					
@@ -684,6 +709,109 @@
 
 
 
+- (NSMutableArray *)iterateThroughGroupingsForElement:(XMLelement *)element intoArray:(NSMutableArray *)typeArray
+{
+	if (!element) return typeArray;
+	
+	if ([element.children count])
+	{
+		for (XMLelement *oneChild in element.children)
+		{
+			[self iterateThroughGroupingsForElement:oneChild intoArray:typeArray];
+		}
+	}
+	else
+	{
+		NSString *elementName = [element.attributes objectForKey:@"name"];
+		if ([elementName isEqualToString:@"return"])
+		{
+			elementName = @"_return";  // reserved word in objC
+		}
+		
+		NSString *elementType = [element.attributes objectForKey:@"type"];
+		NSArray *typeParts = [elementType componentsSeparatedByString:@":"];
+		
+		
+		NSString *maxOccurs = [element.attributes objectForKey:@"maxOccurs"];
+		
+		if ([maxOccurs isEqualToString:@"unbounded"])
+		{
+			// is array, we don't care about other type
+			NSArray *typeParts = [elementType componentsSeparatedByString:@":"];
+			
+			
+			NSDictionary *elementDict = [NSDictionary dictionaryWithObjectsAndKeys:@"@array", @"type", [NSString stringWithFormat:@"%@", elementName], @"name", [typeParts lastObject], @"typeInArray", nil];
+			[typeArray addObject:elementDict];
+			
+			return typeArray;
+		}
+		
+		if ([typeParts count]==2)
+		{
+			NSString *namespace = [typeParts objectAtIndex:0];
+			NSString *type = [typeParts objectAtIndex:1];
+			
+			if ([self namespaceIsXMLSchema:namespace])
+			{
+				NSDictionary *elementDict = [NSDictionary dictionaryWithObjectsAndKeys:type, @"type", elementName, @"name", nil];
+				[typeArray addObject:elementDict];						
+			}
+			else
+			{
+				// peak and simplify
+				
+				NSArray *peakType = [self propertiesOfComplexType:type];
+				NSLog(@"%@", peakType);
+				
+				if ([peakType count]==1)
+				{
+					// only one sub-element let's simplify
+					NSMutableDictionary *simplifyType = [NSMutableDictionary dictionaryWithDictionary:[peakType lastObject]];
+					[simplifyType setObject:elementName forKey:@"name"];
+					NSDictionary *elementDict = [NSDictionary dictionaryWithDictionary:simplifyType];
+					[typeArray addObject:elementDict];
+				}
+				else
+				{
+					NSDictionary *elementDict = [NSDictionary dictionaryWithObjectsAndKeys:type, @"type", elementName, @"name", nil];
+					[typeArray addObject:elementDict];
+				}
+			}
+		}
+		else
+		{
+			// groups could be referenced here:
+			if ([element.name isEqualToString:@"group"])
+			{
+				NSString *ref = [element.attributes objectForKey:@"ref"];
+				NSArray *refParts = [ref componentsSeparatedByString:@":"];
+				
+				XMLelement *groupElement = [[schema getNamedChildren:@"group" WithAttribute:@"name" HasValue:[refParts lastObject]] lastObject];
+				
+				[self iterateThroughGroupingsForElement:groupElement intoArray:typeArray];
+			}
+			else
+			{
+				NSLog(@"strang: %@", element);
+			}
+		}
+	}
+	return typeArray;
+}
+
+- (NSArray *)propertiesOfComplexType:(NSString *)complexTypeName
+{
+	// get schema element
+	XMLelement *schemaElement = [[schema getNamedChildren:@"complexType" WithAttribute:@"name" HasValue:complexTypeName] lastObject];
+	
+	
+	NSMutableArray *typeArray = [NSMutableArray array];
+	[self iterateThroughGroupingsForElement:schemaElement intoArray:typeArray];
+	
+	return [NSArray arrayWithArray:typeArray];
+}
+
+
 - (NSString *)headerForComplexTypes
 {
 	NSMutableString *tmpString = [NSMutableString string];
@@ -699,22 +827,31 @@
 			NSString *className = [element.attributes objectForKey:@"name"];
 			// get types
 			
-			XMLelement *child = [element.children lastObject];  // should be only one
+			NSArray *properties = [self propertiesOfComplexType:className];
+			
+			if ([className isEqualToString:@"RunInstancesType"])
+			{
+				NSLog(@"%@", element);
+			}
+			
+			//XMLelement *child = [element.children lastObject];  // should be only one
 			
 			
 			// check if it's array, we don't need a class for that
 			
 			
 			//NSMutableDictionary *elementTypeDict = [NSMutableDictionary dictionary];
-			NSMutableArray *elementTypeArray = [NSMutableArray array];
+			//NSMutableArray *elementTypeArray = [NSMutableArray array];
 			//[self addElementTypesToDictionary:elementTypeDict element:child];
 			
 			//NSArray *sortedKeys = [[elementTypeDict allKeys] sortedArrayUsingSelector:@selector(compare:)];
 			
 			
-			[self addElementTypesToArray:elementTypeArray element:child];
+			//[self addElementTypesToArray:elementTypeArray element:child];
 			
-			if (([elementTypeArray count]>=1)&&(![[[elementTypeArray lastObject] objectForKey:@"type"] isEqualToString:@"@array"]))
+			//NSLog(@"class: %@\n%@", className, properties);
+			
+			//if (([elementTypeArray count]>=1)&&(![[[elementTypeArray lastObject] objectForKey:@"type"] isEqualToString:@"@array"]))
 			{
 				[tmpClassesString appendFormat:@"@class %@;\n", className];
 				
@@ -723,21 +860,26 @@
 				[tmpString appendFormat:@"@interface %@ : NSObject\n", className];
 				[tmpString appendString:@"{\n"];
 				
-				for (NSDictionary *oneElement in elementTypeArray)
+				for (NSDictionary *oneElement in properties)
 				{
 					NSString *elementName = [oneElement objectForKey:@"name"];
 					NSString *elementType = [oneElement objectForKey:@"type"];
 					NSString *elementCocoaType = [self cocoaTypeForSoapType:elementType];
 					
+					NSString *comment = @"";
+					if ([elementType isEqualToString:@"@array"])
+					{
+						comment = [NSString stringWithFormat:@" // %@", [oneElement objectForKey:@"typeInArray"]];
+					}
 					
-					[tmpString appendFormat:@"\t%@ %@;\n", elementCocoaType, elementName];
+					[tmpString appendFormat:@"\t%@ %@;%@\n", elementCocoaType, elementName, comment];
 				}
 				
 				[tmpString appendString:@"}\n"];
 				
 				// write properties
 				
-				for (NSDictionary *oneElement in elementTypeArray)
+				for (NSDictionary *oneElement in properties)
 				{
 					NSString *elementName = [oneElement objectForKey:@"name"];
 					NSString *elementType = [oneElement objectForKey:@"type"];
@@ -773,22 +915,24 @@
 		if ([element.name isEqualToString:@"complexType"])
 		{
 			NSString *className = [element.attributes objectForKey:@"name"];
+			NSArray *properties = [self propertiesOfComplexType:className];
+
 			
 			NSMutableString *tmpDeallocString = [NSMutableString string];
 			
 			
-			XMLelement *child = [element.children lastObject];  // should be only one
+			//XMLelement *child = [element.children lastObject];  // should be only one
 			
-			NSMutableArray *elementTypeArray = [NSMutableArray array];
-			[self addElementTypesToArray:elementTypeArray element:child];
+			//NSMutableArray *elementTypeArray = [NSMutableArray array];
+			//[self addElementTypesToArray:elementTypeArray element:child];
 			
-			if (([elementTypeArray count]>=1)&&(![[[elementTypeArray lastObject] objectForKey:@"type"] isEqualToString:@"@array"]))
+			//if (([elementTypeArray count]>=1)&&(![[[elementTypeArray lastObject] objectForKey:@"type"] isEqualToString:@"@array"]))
 			{
 				
 				
 				[tmpString appendFormat:@"@implementation %@\n", className];
 				
-				for (NSDictionary *oneElement in elementTypeArray)
+				for (NSDictionary *oneElement in properties)
 				{
 					NSString *elementName = [oneElement objectForKey:@"name"];
 					NSString *elementType = [oneElement objectForKey:@"type"];
@@ -805,7 +949,7 @@
 				[tmpString appendString:@"{\n"];
 				[tmpString appendString:@"\tNSMutableString *tmpRet = [NSMutableString string];\n"];
 				
-				for (NSDictionary *oneElement in elementTypeArray)
+				for (NSDictionary *oneElement in properties)
 				{
 					NSString *elementName = [oneElement objectForKey:@"name"];
 					[tmpString appendFormat:@"\t[tmpRet appendFormat:@\"<%@>%%@</%@>\", [self valueForKey:@\"%@\"]];\n", elementName, elementName, elementName];
