@@ -1117,7 +1117,15 @@
 				
 				if (!convertedVariable) convertedVariable = methodParamName;
 				
-				[classBody appendFormat:@"\t[paramArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@\"%@\", @\"name\",%@, @\"value\", nil]];\n", paramName, convertedVariable];
+				if ([paramType hasSuffix:@"*"])
+				{
+					[classBody appendFormat:@"\t[paramArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@\"%@\", @\"name\",%@?%@:@\"\", @\"value\", nil]];\n", paramName, convertedVariable, paramName];
+				}
+				else
+				{
+					[classBody appendFormat:@"\t[paramArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@\"%@\", @\"name\",%@, @\"value\", nil]];\n", paramName, convertedVariable];
+				}
+
 			}
 			
 			if (soapVersion==SOAPVersion1_0)
