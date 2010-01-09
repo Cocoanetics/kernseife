@@ -1119,7 +1119,7 @@
 				
 				if ([paramType hasSuffix:@"*"])
 				{
-					[classBody appendFormat:@"\t[paramArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@\"%@\", @\"name\",%@?%@:@\"\", @\"value\", nil]];\n", paramName, convertedVariable, paramName];
+					[classBody appendFormat:@"\t[paramArray addObject:[NSDictionary dictionaryWithObjectsAndKeys:@\"%@\", @\"name\",%@?%@:@\"\", @\"value\", nil]];\n", paramName, methodParamName, convertedVariable];
 				}
 				else
 				{
